@@ -4,7 +4,7 @@ import numpy as np
 
 np.random.seed(1337)  # 为了再见性
 from keras.datasets import mnist
-from keras.models import Sequential
+from keras.models import Sequential,load_model
 from keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, BatchNormalization, Input, Dropout
 from keras.utils import to_categorical
 from keras import backend as K
@@ -50,6 +50,8 @@ model = Sequential([
     MaxPooling2D(pool_size=[2, 2], strides=[2, 2], padding='valid'),
     Conv2D(filters=32, kernel_size=[3, 3], strides=[1, 1], activation=keras.activations.relu, use_bias=True,
            padding='same'),
+    Conv2D(filters=32, kernel_size=[3, 3], strides=[1, 1], activation=keras.activations.relu, use_bias=True,
+           padding='same'),
     Conv2D(filters=16, kernel_size=[3, 3], strides=[1, 1], activation=keras.activations.relu, use_bias=True,
            padding='same'),
     MaxPooling2D(pool_size=[2, 2], strides=[2, 2], padding='valid'),
@@ -64,16 +66,27 @@ model = Sequential([
 ## 模型的编译
 model.compile('adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-## 模型的训练
-model.fit(X_train,Y_train,epochs=1,batch_size=64)
+## 模型的第一次训练
+model.fit(X_train[:30000],Y_train[:30000],epochs=5,batch_size=64)
+model.save('../weights/model1.h5')
+score = model.evaluate(X_test, Y_test, verbose=0)
+print('Test score:', score[0])
+print('Test accuracy:', score[1])
+del model
 
-model.save_weights('../weights/model.h5')
+## 加载训练好的模型，准备进行第二次训练
+model = load_model('../weights/model1.h5')
 
-# model.load_weights('..//weights/model.h5')
+## 模型的第二次训练
+model.fit(X_train[30000:],Y_train[30000:],epochs=5,batch_size=64)
+model.save_weights('../weights/model2.h5')
 score = model.evaluate(X_test, Y_test, verbose=0)
 print('Test score:', score[0])
 print('Test accuracy:', score[1])
 
+
+'''
 predictions = model.predict(X_test[:5])
 print(np.argmax(predictions, axis=1))
 print(np.argmax(Y_test[:5], axis=1))
+'''
