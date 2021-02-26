@@ -4,7 +4,7 @@ import numpy as np
 
 np.random.seed(1337)  # 为了再见性
 from keras.datasets import mnist
-from keras.models import Sequential,load_model
+from keras.models import Sequential, load_model
 from keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, BatchNormalization, Input, Dropout
 from keras.utils import to_categorical
 from keras import backend as K
@@ -39,28 +39,28 @@ Y_test = to_categorical(y_test, 10)
 ## 模型的搭建
 
 model = Sequential([
-    Input(shape=[28, 28, 1]),
+    Input(shape=[28, 28, 1], name='inputs'),
     Conv2D(filters=8, kernel_size=[5, 5], strides=[1, 1], activation=keras.activations.relu, use_bias=True,
-           padding='same'),
-    BatchNormalization(axis=1),
-    MaxPooling2D(pool_size=[2, 2], strides=[2, 2], padding='valid'),
+           padding='same', name='conv1'),
+    BatchNormalization(axis=1, name='bn1'),
+    MaxPooling2D(pool_size=[2, 2], strides=[2, 2], padding='valid', name="pool1"),
     Conv2D(filters=16, kernel_size=[4, 4], strides=[1, 1], activation=keras.activations.relu, use_bias=True,
-           padding='same'),
-    BatchNormalization(axis=1),
-    MaxPooling2D(pool_size=[2, 2], strides=[2, 2], padding='valid'),
+           padding='same', name='conv2'),
+    BatchNormalization(axis=1, name='bn2'),
+    MaxPooling2D(pool_size=[2, 2], strides=[2, 2], padding='valid', name='pool2'),
     Conv2D(filters=32, kernel_size=[3, 3], strides=[1, 1], activation=keras.activations.relu, use_bias=True,
-           padding='same'),
+           padding='same', name='conv3'),
     Conv2D(filters=32, kernel_size=[3, 3], strides=[1, 1], activation=keras.activations.relu, use_bias=True,
-           padding='same'),
+           padding='same', name='conv4'),
     Conv2D(filters=16, kernel_size=[3, 3], strides=[1, 1], activation=keras.activations.relu, use_bias=True,
-           padding='same'),
-    MaxPooling2D(pool_size=[2, 2], strides=[2, 2], padding='valid'),
-    Flatten(),
-    Dense(128, activation=keras.activations.relu, use_bias=True),
-    Dropout(0.5),
-    Dense(128, activation=keras.activations.relu, use_bias=True),
-    Dropout(0.5),
-    Dense(10, activation=keras.activations.softmax, use_bias=True)
+           padding='same', name='conv5'),
+    MaxPooling2D(pool_size=[2, 2], strides=[2, 2], padding='valid', name='pool3'),
+    Flatten(name='flatten'),
+    Dense(128, activation=keras.activations.relu, use_bias=True, name='fc1'),
+    Dropout(0.5, name='dropout1'),
+    Dense(128, activation=keras.activations.relu, use_bias=True, name='fc2'),
+    Dropout(0.5, name='dropout2'),
+    Dense(10, activation=keras.activations.softmax, use_bias=True, name='fc3')
 ])
 
 ## 模型的编译
@@ -72,18 +72,34 @@ model.save('../weights/model1.h5')
 score = model.evaluate(X_test, Y_test, verbose=0)
 print('Test score:', score[0])
 print('Test accuracy:', score[1])
+
 del model
 
 ## 加载训练好的模型，准备进行第二次训练
 model = load_model('../weights/model1.h5')
+# score = model.evaluate(X_test, Y_test, verbose=0)
+# print('Test score:', score[0])
+# print('Test accuracy:', score[1])
+
+# 查看并设置每层是否可训练
+print("-------------------------------------------------")
+for layer in model.layers[:12]:
+    print(layer.name, ' is trainable? ', layer.trainable)
+    layer.trainable = False
+
+model.compile('adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+# 检验并查看是否设置成功
+print("-------------------------------------------------")
+for layer in model.layers:
+    print(layer.name, ' is trainable? ', layer.trainable)
 
 ## 模型的第二次训练
-model.fit(X_train[30000:],Y_train[30000:],epochs=5,batch_size=64)
-model.save_weights('../weights/model2.h5')
+model.fit(X_train[30000:], Y_train[30000:], epochs=5, batch_size=64)
+model.save('../weights/model2.h5')
 score = model.evaluate(X_test, Y_test, verbose=0)
 print('Test score:', score[0])
 print('Test accuracy:', score[1])
-
 
 '''
 predictions = model.predict(X_test[:5])
