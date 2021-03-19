@@ -10,41 +10,13 @@ from keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, BatchNormalizatio
 from keras.utils import to_categorical
 from keras import backend as K
 from tensorflow import keras
+from pathlib import Path
+
 np.random.seed(1337)  # 为了再见性
 
 
-def model():
-    img_rows, img_cols = 28, 28
-    # the data, shuffled and split between train and test sets
-    # (X_train, y_train), (X_test, y_test) = mnist.load_data()
-
-    (X_train, y_train) = load_mnist(path='../../data/fashion', kind='train')
-    (X_test, y_test) = load_mnist(path='../../data/fashion', kind='t10k')
-
-    # 根据不同的backend定下不同的格式
-    if K.image_data_format() == 'channels_first':
-        X_train = X_train.reshape(X_train.shape[0], 1, img_rows, img_cols)
-        X_test = X_test.reshape(X_test.shape[0], 1, img_rows, img_cols)
-        input_shape = (1, img_rows, img_cols)
-    else:
-        X_train = X_train.reshape(X_train.shape[0], img_rows, img_cols, 1)
-        X_test = X_test.reshape(X_test.shape[0], img_rows, img_cols, 1)
-        input_shape = (img_rows, img_cols, 1)
-
-    X_train = X_train.astype('float32')
-    X_test = X_test.astype('float32')
-    X_train /= 255
-    X_test /= 255
-    print('X_train shape:', X_train.shape)
-    print(X_train.shape[0], 'train samples')
-    print(X_test.shape[0], 'test samples')
-
-    # 转换为one_hot类型
-    Y_train = to_categorical(y_train, 10)
-    Y_test = to_categorical(y_test, 10)
-
+def origin_model(X_train=None, Y_train=None):
     ## 模型的搭建
-
     model = Sequential([
         Input(shape=[28, 28, 1], name='inputs'),
         Conv2D(filters=16, kernel_size=[5, 5], strides=[1, 1], activation=keras.activations.relu, use_bias=True,
@@ -73,24 +45,20 @@ def model():
     ## 模型的编译
     model.compile('adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-    ## 模型的第一次训练
-    model.fit(X_train[:30000], Y_train[:30000], epochs=10, batch_size=64)
-    model.save('../weights/model1.h5')
-    score = model.evaluate(X_test, Y_test, verbose=0)
-    print('Test score:', score[0])
-    print('Test accuracy:', score[1])
+    # ## 模型的第一次训练
+    # model.fit(X_train[:30000], Y_train[:30000], epochs=10, batch_size=64)
+    # model.save('../weights/model1.h5')
 
-    del model
+    return model
 
-    ## 加载训练好的模型，准备进行第二次训练
-    model = load_model('../weights/model1.h5')
-    # score = model.evaluate(X_test, Y_test, verbose=0)
-    # print('Test score:', score[0])
-    # print('Test accuracy:', score[1])
+
+def update_model(origin_model_path):
+    ## 加载训练好的模型，对其进行更新
+    model = load_model(origin_model_path)
 
     # 查看并设置每层是否可训练
     print("-------------------------------------------------")
-    for layer in model.layers[:155678]:
+    for layer in model.layers[:15]:
         print(layer.name, ' is trainable? ', layer.trainable)
         layer.trainable = False
 
@@ -101,20 +69,70 @@ def model():
     for layer in model.layers:
         print(layer.name, ' is trainable? ', layer.trainable)
 
-    ## 模型的第二次训练
-    model.fit(X_train[30000:], Y_train[30000:], epochs=10, batch_size=64)
-    model.save('../weights/model2.h5')
-    score = model.evaluate(X_test, Y_test, verbose=0)
-    print('Test score:', score[0])
-    print('Test accuracy:', score[1])
+    return model
+
+    # ## 模型的第二次训练
+    # model.fit(X_train[30000:], Y_train[30000:], epochs=10, batch_size=64)
+    # model.save('../weights/model2.h5')
+    # # score = model.evaluate(X_test, Y_test, verbose=0)
+    # # print('Test score:', score[0])
+    # # print('Test accuracy:', score[1])
 
     '''
     predictions = model.predict(X_test[:5])
     print(np.argmax(predictions, axis=1))
     print(np.argmax(Y_test[:5], axis=1))
     '''
+    return model
 
 
+def prepared_data():
+    img_rows, img_cols = 28, 28
+    # the data, shuffled and split between train and test sets
+    # (X_train, y_train), (X_test, y_test) = mnist.load_data()
+
+    (X_train, y_train) = load_mnist(path='../../data/mnist', kind='train')
+    (X_test, y_test) = load_mnist(path='../../data/mnist', kind='t10k')
+
+    # 根据不同的backend定下不同的格式
+    if K.image_data_format() == 'channels_first':
+        X_train = X_train.reshape(X_train.shape[0], 1, img_rows, img_cols)
+        X_test = X_test.reshape(X_test.shape[0], 1, img_rows, img_cols)
+        input_shape = (1, img_rows, img_cols)
+    else:
+        X_train = X_train.reshape(X_train.shape[0], img_rows, img_cols, 1)
+        X_test = X_test.reshape(X_test.shape[0], img_rows, img_cols, 1)
+        input_shape = (img_rows, img_cols, 1)
+
+    X_train = X_train.astype('float32')
+    X_test = X_test.astype('float32')
+    X_train /= 255
+    X_test /= 255
+    print('X_train shape:', X_train.shape)
+    print(X_train.shape[0], 'train samples')
+    print(X_test.shape[0], 'test samples')
+
+    # 转换为one_hot类型
+    Y_train = to_categorical(y_train, 10)
+    Y_test = to_categorical(y_test, 10)
+
+    return X_train, Y_train, X_test, Y_test
+
+
+def evaluate_model(model, X_test, Y_test):
+    score = model.evaluate(X_test, Y_test, verbose=0)
+    print('Test score:', score[0])
+    print('Test accuracy:', score[1])
+
+
+def train_model(model, X_train, Y_train, model_path):
+    model.fit(X_train, Y_train, epochs=5, batch_size=64)
+    model.save(model_path)
+
+    return model
+
+
+## 加载数据集
 def load_mnist(path, kind='train'):
     """Load MNIST data from `path`"""
     labels_path = os.path.join(path,
@@ -135,5 +153,33 @@ def load_mnist(path, kind='train'):
     return images, labels
 
 
+##  检验模型是否已经训练过
+def check_file(path_name):
+    model1_file = Path(path_name)
+    if model1_file.exists():
+        return True
+
+    return False
+
+
 if __name__ == '__main__':
-    model()
+    X_train, Y_train, X_test, Y_test = prepared_data()
+    origin_model_path = '../weights/model1.h5'
+    new_model_path = '../weights/model2.h5'
+
+    ## 获取模型原型
+    model = origin_model()
+
+
+    # 第一次模型训练
+    ## 为了节省时间，首先判断之前的训练中是否保存了该模型参数
+    if check_file(origin_model_path):
+        model = load_model(origin_model_path)
+    else:
+        model = train_model(model, X_train[:30000], Y_train[:30000], origin_model_path)
+    evaluate_model(model, X_test, Y_test)
+
+    #第二次模型训练
+    model = update_model(origin_model_path)
+    model = train_model(model, X_train[30000:], Y_train[30000:], new_model_path)
+    evaluate_model(model, X_test, Y_test)
