@@ -19,25 +19,25 @@ def origin_model(X_train=None, Y_train=None):
     ## 模型的搭建
     model = Sequential([
         Input(shape=[28, 28, 1], name='inputs'),
-        Conv2D(filters=16, kernel_size=[5, 5], strides=[1, 1], activation=keras.activations.relu, use_bias=True,
+        Conv2D(filters=64, kernel_size=[11, 11], strides=[1, 1], activation=keras.activations.relu, use_bias=True,
                padding='same', name='conv1'),
         BatchNormalization(axis=1, name='bn1'),
         MaxPooling2D(pool_size=[2, 2], strides=[2, 2], padding='valid', name="pool1"),
-        Conv2D(filters=32, kernel_size=[4, 4], strides=[1, 1], activation=keras.activations.relu, use_bias=True,
+        Conv2D(filters=192, kernel_size=[5, 5], strides=[1, 1], activation=keras.activations.relu, use_bias=True,
                padding='same', name='conv2'),
         BatchNormalization(axis=1, name='bn2'),
         MaxPooling2D(pool_size=[2, 2], strides=[2, 2], padding='valid', name='pool2'),
-        Conv2D(filters=64, kernel_size=[3, 3], strides=[1, 1], activation=keras.activations.relu, use_bias=True,
+        Conv2D(filters=384, kernel_size=[3, 3], strides=[1, 1], activation=keras.activations.relu, use_bias=True,
                padding='same', name='conv3'),
-        Conv2D(filters=64, kernel_size=[3, 3], strides=[1, 1], activation=keras.activations.relu, use_bias=True,
+        Conv2D(filters=384, kernel_size=[3, 3], strides=[1, 1], activation=keras.activations.relu, use_bias=True,
                padding='same', name='conv4'),
-        Conv2D(filters=32, kernel_size=[3, 3], strides=[1, 1], activation=keras.activations.relu, use_bias=True,
+        Conv2D(filters=256, kernel_size=[3, 3], strides=[1, 1], activation=keras.activations.relu, use_bias=True,
                padding='same', name='conv5'),
         MaxPooling2D(pool_size=[2, 2], strides=[2, 2], padding='valid', name='pool3'),
         Flatten(name='flatten'),
-        Dense(256, activation=keras.activations.relu, use_bias=True, name='fc1'),
+        Dense(4096, activation=keras.activations.relu, use_bias=True, name='fc1'),
         Dropout(0.5, name='dropout1'),
-        Dense(256, activation=keras.activations.relu, use_bias=True, name='fc2'),
+        Dense(4096, activation=keras.activations.relu, use_bias=True, name='fc2'),
         Dropout(0.5, name='dropout2'),
         Dense(10, activation=keras.activations.softmax, use_bias=True, name='fc3')
     ])
@@ -126,7 +126,7 @@ def evaluate_model(model, X_test, Y_test):
 
 
 def train_model(model, X_train, Y_train, model_path):
-    model.fit(X_train, Y_train, epochs=5, batch_size=64)
+    model.fit(X_train, Y_train, epochs=10, batch_size=64)
     model.save(model_path)
 
     return model
@@ -164,8 +164,8 @@ def check_file(path_name):
 
 if __name__ == '__main__':
     X_train, Y_train, X_test, Y_test = prepared_data()
-    origin_model_path = '../weights/model1.h5'
-    new_model_path = '../weights/model2.h5'
+    origin_model_path = '../weights/comp1.h5'
+    new_model_path = '../weights/comp2.h5'
 
     ## 获取模型原型
     model = origin_model()
